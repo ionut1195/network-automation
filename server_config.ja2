@@ -1,0 +1,172 @@
+servers:
+{% for server in servers %}
+  - server:
+      #{{ server.id }} - {{ server.name }}
+      host: {{ server.host }}
+      port: {{ server.port }}
+      environment: {{ server.environment }}
+      applications:
+        {% for app in server.applications %}
+        - {{ app }}
+        {% endfor %}
+
+      {% if server.ssl is defined %}
+      ssl:
+        enabled: {{ server.ssl.enabled }}
+        cert_path: {{ server.ssl.cert_path }}
+        key_path: {{ server.ssl.key_path }}
+        protocols:
+          {% for protocol in server.ssl.protocols %}
+        - {{ protocol }}
+          {% endfor %}
+        ciphers: {{ server.ssl.ciphers }}
+      {% endif %}
+
+      {% if server.load_balancer is defined %}
+      load_balancer:
+        address: {{ server.load_balancer.address }}
+        {% if server.load_balancer.health_check is defined %}
+        health_check:
+          interval: {{ server.load_balancer.health_check.interval }}
+          path: {{ server.load_balancer.health_check.path }}
+          timeout: {{ server.load_balancer.health_check.timeout }}
+        {% endif %}
+      {% endif %}
+
+      {% if server.firewall is defined %}
+      firewall:
+        rules:
+          {% for rule in server.firewall.rules %}
+        - action: {{ rule.action }}
+          port: {{ rule.port }}
+          ip_range: {{ rule.ip_range }}
+          {% endfor %}
+      {% endif %}
+
+      {% if server.monitoring is defined %}
+      monitoring:
+        enabled: {{ server.monitoring.enabled }}
+        system: {{ server.monitoring.system }}
+        endpoints:
+          {% for endpoint in server.monitoring.endpoints %}
+        - {{ endpoint }}
+          {% endfor %}
+        {% if server.monitoring.alerting is defined %}
+        alerting:
+          email: {{ server.monitoring.alerting.email }}
+          threshold_cpu: {{ server.monitoring.alerting.threshold_cpu }}
+          threshold_memory: {{ server.monitoring.alerting.threshold_memory }}
+        {% endif %}
+      {% endif %}
+
+      {% if server.logging is defined %}
+      logging:
+        enabled: {{ server.logging.enabled }}
+        level: {{ server.logging.level }}
+        retention_days: {{ server.logging.retention_days }}
+        path: {{ server.logging.path }}
+      {% endif %}
+
+      {% if server.backup is defined %}
+      backup:
+        enabled: {{ server.backup.enabled }}
+        frequency: {{ server.backup.frequency }}
+        time: {{ server.backup.time }}
+        retention_days: {{ server.backup.retention_days }}
+        backup_type: {{ server.backup.backup_type }}
+        path: {{ server.backup.path }}
+      {% endif %}
+
+      {% if server.security is defined %}
+      security:
+        {% if server.security.firewall is defined %}
+        firewall:
+          rules:
+            {% for rule in server.security.firewall.rules %}
+        - action: {{ rule.action }}
+          port: {{ rule.port }}
+          ip_range: {{ rule.ip_range }}
+            {% endfor %}
+        {% endif %}
+        
+        {% if server.security.encryption is defined %}
+        encryption:
+          at_rest: {{ server.security.encryption.at_rest }}
+          key_management: {{ server.security.encryption.key_management }}
+        {% endif %}
+      {% endif %}
+{% endfor %}
+
+switches:
+{% for switch in switches %}
+  - switch:
+      #{{ switch.id }} - {{ switch.name }}
+      ip: {{ switch.ip }}
+      ports: {{ switch.ports }}
+      vlan:
+        {% for vlan in switch.vlan %}
+        - {{ vlan }}
+        {% endfor %}
+      trunk_ports:
+        {% for port in switch.trunk_ports %}
+        - {{ port }}
+        {% endfor %}
+
+      {% if switch.spanning_tree is defined %}
+      spanning_tree:
+        enabled: {{ switch.spanning_tree.enabled }}
+        mode: {{ switch.spanning_tree.mode | default("") }}
+        {% if switch.spanning_tree.regions %}
+        regions:
+          {% for region in switch.spanning_tree.regions %}
+        - {{ region }}
+          {% endfor %}
+        {% endif %}
+      {% endif %}
+
+      {% if switch.link_aggregation is defined %}
+      link_aggregation:
+        enabled: {{ switch.link_aggregation.enabled }}
+        groups:
+          {% for group in switch.link_aggregation.groups %}
+        - name: {{ group.name }}
+          members:
+            {% for member in group.members %}
+        - {{ member }}
+            {% endfor %}
+          mode: {{ group.mode }}
+          {% endfor %}
+      {% endif %}
+
+      {% if switch.qos is defined %}
+      qos:
+        enabled: {{ switch.qos.enabled }}
+        settings:
+          {% for setting in switch.qos.settings %}
+        - policy: {{ setting.policy }}
+          vlan_id: {{ setting.vlan_id }}
+          {% if setting.priority is defined %}
+          priority: {{ setting.priority }}
+          {% endif %}
+          {% if setting.limit is defined %}
+          limit: {{ setting.limit }}
+          {% endif %}
+          {% endfor %}
+      {% endif %}
+
+      {% if switch.security is defined %}
+      security:
+        {% if switch.security.mac_filtering is defined %}
+        mac_filtering: {{ switch.security.mac_filtering }}
+        allowed_macs:
+          {% for mac in switch.security.allowed_macs %}
+        - {{ mac }}
+          {% endfor %}
+        {% endif %}
+        
+        {% if switch.security.mac_authentication_bypass is defined %}
+        mac_authentication_bypass: {{ switch.security.mac_authentication_bypass }}
+        auth_server: {{ switch.security.auth_server }}
+        {% endif %}
+      {% endif %}
+{% endfor %}

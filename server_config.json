@@ -1,0 +1,203 @@
+{
+    "servers": [
+      {
+        "id": 1,
+        "name": "web_server_prod_1",
+        "host": "10.0.1.10",
+        "port": 80,
+        "environment": "production",
+        "applications": ["nginx", "flask"],
+        "ssl": {
+          "enabled": true,
+          "cert_path": "/etc/ssl/certs/web_server.crt",
+          "key_path": "/etc/ssl/private/web_server.key",
+          "protocols": ["TLSv1.2", "TLSv1.3"],
+          "ciphers": "HIGH:!aNULL:!MD5"
+        },
+        "load_balancer": {
+          "address": "10.0.1.2",
+          "health_check": {
+            "interval": "30s",
+            "path": "/health",
+            "timeout": "5s"
+          }
+        },
+        "firewall": {
+          "rules": [
+            {"action": "allow", "port": 80, "ip_range": "0.0.0.0/0"},
+            {"action": "allow", "port": 443, "ip_range": "0.0.0.0/0"},
+            {"action": "deny", "port": 8080, "ip_range": "0.0.0.0/0"}
+          ]
+        },
+        "monitoring": {
+          "enabled": true,
+          "system": "Prometheus",
+          "endpoints": ["/metrics", "/health"],
+          "alerting": {
+            "email": "alerts@webserver.com",
+            "threshold_cpu": 85,
+            "threshold_memory": 90
+          }
+        }
+      },
+      {
+        "id": 2,
+        "name": "db_server_prod_1",
+        "host": "10.0.2.10",
+        "port": 5432,
+        "environment": "production",
+        "applications": ["postgresql"],
+        "replication": {
+          "enabled": true,
+          "mode": "synchronous",
+          "master": true,
+          "replicas": ["10.0.2.11", "10.0.2.12"],
+          "failover": {
+            "enabled": true,
+            "timeout": "60s",
+            "monitoring": true
+          }
+        },
+        "backup": {
+          "enabled": true,
+          "frequency": "daily",
+          "time": "02:00",
+          "retention_days": 14,
+          "backup_type": "incremental",
+          "path": "/var/backups/db_prod"
+        },
+        "security": {
+          "firewall": {
+            "rules": [
+              {"action": "allow", "port": 5432, "ip_range": "10.0.1.0/24"},
+              {"action": "deny", "port": 3306, "ip_range": "0.0.0.0/0"}
+            ]
+          },
+          "encryption": {
+            "at_rest": true,
+            "key_management": "AWS KMS"
+          }
+        },
+        "logging": {
+          "enabled": true,
+          "level": "debug",
+          "retention_days": 30,
+          "path": "/var/log/db_prod"
+        }
+      },
+      {
+        "id": 3,
+        "name": "api_server_staging",
+        "host": "10.0.3.15",
+        "port": 5000,
+        "environment": "staging",
+        "applications": ["flask", "gunicorn"],
+        "ssl": {
+          "enabled": true,
+          "cert_path": "/etc/ssl/certs/api_server_staging.crt",
+          "key_path": "/etc/ssl/private/api_server_staging.key",
+          "protocols": ["TLSv1.3"]
+        },
+        "load_balancer": {
+          "enabled": false
+        },
+        "database": {
+          "host": "10.0.2.10",
+          "port": 5432,
+          "name": "api_db_staging",
+          "user": "api_user",
+          "password": "staging_password"
+        },
+        "monitoring": {
+          "enabled": true,
+          "system": "Prometheus",
+          "metrics_path": "/metrics",
+          "alert_thresholds": {
+            "cpu": 75,
+            "memory": 80
+          }
+        },
+        "logging": {
+          "enabled": true,
+          "level": "info",
+          "retention_days": 14,
+          "path": "/var/log/api_staging"
+        }
+      }
+    ],
+    "switches": [
+      {
+        "id": 1,
+        "name": "core_switch_dc_1",
+        "ip": "192.168.1.1",
+        "ports": 48,
+        "vlan": [100, 200, 300],
+        "trunk_ports": [1, 2, 3],
+        "spanning_tree": {
+          "enabled": true,
+          "mode": "rstp"
+        },
+        "link_aggregation": {
+          "enabled": true,
+          "groups": [
+            {"name": "lag1", "members": [5, 6, 7], "mode": "active"},
+            {"name": "lag2", "members": [8, 9], "mode": "passive"}
+          ]
+        },
+        "qos": {
+          "enabled": true,
+          "settings": [
+            {"policy": "priority", "vlan_id": 100, "priority": "high"},
+            {"policy": "bandwidth_limit", "vlan_id": 300, "limit": "500mbps"}
+          ]
+        }
+      },
+      {
+        "id": 2,
+        "name": "access_switch_office_1",
+        "ip": "192.168.2.1",
+        "ports": 24,
+        "vlan": [10, 20],
+        "trunk_ports": [1],
+        "access_ports": [2, 3],
+        "spanning_tree": {
+          "enabled": false
+        },
+        "security": {
+          "mac_filtering": true,
+          "allowed_macs": ["00:1A:2B:3C:4D:5E", "00:1A:2B:3C:4D:5F"]
+        },
+        "monitoring": {
+          "snmp": {
+            "enabled": true,
+            "community_string": "public",
+            "traps": ["link_down", "link_up"]
+          }
+        }
+      },
+      {
+        "id": 3,
+        "name": "core_switch_dc_2",
+        "ip": "192.168.1.2",
+        "ports": 48,
+        "vlan": [400, 500],
+        "trunk_ports": [10, 11],
+        "spanning_tree": {
+          "enabled": true,
+          "mode": "mstp",
+          "regions": ["regionA", "regionB"]
+        },
+        "link_aggregation": {
+          "enabled": true,
+          "groups": [
+            {"name": "redundant_lag", "members": [15, 16], "mode": "dynamic"}
+          ]
+        },
+        "security": {
+          "mac_authentication_bypass": true,
+          "auth_server": "192.168.1.100"
+        }
+      }
+    ]
+  }
+  
